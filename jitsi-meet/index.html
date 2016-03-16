@@ -17,6 +17,91 @@
     <script src="libs/lib-jitsi-meet.min.js?v=860"></script>
     <script src="libs/app.bundle.min.js?v=860"></script>
     <!--#include virtual="plugin.head.html" -->
+ <script type="text/javascript">
+  function SSJitsi(){
+    localId: undefined,
+    isModerator: false,
+    audioMuted: false,
+    videoMuted: false,
+    isSharingScreen: false,
+    isDesktopSharingEnabled: false,
+    console.log('hello');
+
+ toggleScreenSharing (shareScreen = !this.isSharingScreen) {
+        if (this.videoSwitchInProgress) {
+            console.warn("Switch in progress.");
+            return;
+        }
+        if (!this.isDesktopSharingEnabled) {
+            console.warn("Cannot toggle screen sharing: not supported.");
+            return;
+        }
+
+        this.videoSwitchInProgress = true;
+
+        if (shareScreen) {
+            createLocalTracks('desktop').then(([stream]) => {
+                stream.on(
+                    TrackEvents.LOCAL_TRACK_STOPPED,
+                    () => {
+                        // if stream was stopped during screensharing session
+                        // then we should switch to video
+                        // otherwise we stopped it because we already switched
+                        // to video, so nothing to do here
+                        if (this.isSharingScreen) {
+                            this.toggleScreenSharing(false);
+                        }
+                    }
+                );
+                return this.useVideoStream(stream);
+            }).then(() => {
+                this.videoSwitchInProgress = false;
+                console.log('sharing local desktop');
+            }).catch((err) => {
+                this.videoSwitchInProgress = false;
+                this.toggleScreenSharing(false);
+
+                if(err === TrackErrors.CHROME_EXTENSION_USER_CANCELED)
+                    return;
+
+                console.error('failed to share local desktop', err);
+
+                if (err === TrackErrors.FIREFOX_EXTENSION_NEEDED) {
+                    APP.UI.showExtensionRequiredDialog(
+                        config.desktopSharingFirefoxExtensionURL
+                    );
+                    return;
+                }
+
+                // Handling:
+                // TrackErrors.CHROME_EXTENSION_INSTALLATION_ERROR
+                // TrackErrors.GENERAL
+                // and any other
+                let dialogTxt = APP.translation
+                    .generateTranslationHTML("dialog.failtoinstall");
+                let dialogTitle = APP.translation
+                    .generateTranslationHTML("dialog.error");
+                APP.UI.messageHandler.openDialog(
+                    dialogTitle,
+                    dialogTxt,
+                    false
+                );
+            });
+        } else {
+            createLocalTracks('video').then(
+                ([stream]) => this.useVideoStream(stream)
+            ).then(() => {
+                this.videoSwitchInProgress = false;
+                console.log('sharing local video');
+            }).catch((err) => {
+                this.useVideoStream(null);
+                this.videoSwitchInProgress = false;
+                console.error('failed to share local video', err);
+            });
+        }
+    };
+}
+  </script>
   </head>
   <body>
     <div id="welcome_page">
@@ -134,7 +219,7 @@
                     <a class="button icon-settings" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="Settings" data-i18n="[content]toolbar.Settings"></a>
                     <a class="button icon-share-desktop" id="toolbar_button_desktopsharing" data-container="body" data-toggle="popover" data-placement="bottom" content="DESKTOP" shortcut ="toggleDesktopSharingPopover" data-i18n="[content]toolbar.sharescreen" ></a>
                     <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc"  href="http://benjamin-budet.fr/tbi.html" />
-                                        <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc2"  href="javascript:SSJitsi()" />
+                                        <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc2"  onload="SSJitsi()" />
 
                 </span>
             </div>
