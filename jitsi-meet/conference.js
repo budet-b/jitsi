@@ -580,7 +580,7 @@ export default {
     },
 
     videoSwitchInProgress: false,
-    toggleScreenSharing (shareScreen = !this.isSharingScreen) {
+ toggleScreenSharing () {
         if (this.videoSwitchInProgress) {
             console.warn("Switch in progress.");
             return;
@@ -592,64 +592,62 @@ export default {
 
         this.videoSwitchInProgress = true;
 
-        if (shareScreen) {
-            createLocalTracks('desktop').then(([stream]) => {
+        if (this.isSharingScreen) {
+            // stop sharing desktop and share video
+            createLocalTracks('video').then(function ([stream]) {
+                return room.addTrack(stream);
+            }).then((stream) => {
+                if (localVideo) {
+                    localVideo.stop();
+                }
+                localVideo = stream;
+                this.videoMuted = stream.isMuted();
+                APP.UI.setVideoMuted(this.localId, this.videoMuted);
+
+                APP.UI.addLocalStream(stream);
+                console.log('sharing local video');
+            }).catch((err) => {
+                localVideo = null;
+                console.error('failed to share local video', err);
+            }).then(() => {
+                this.videoSwitchInProgress = false;
+                this.isSharingScreen = false;
+                APP.UI.updateDesktopSharingButtons();
+            });
+        } else {
+            // stop sharing video and share desktop
+            createDesktopTrack().then(([stream]) => {
                 stream.on(
-                    TrackEvents.LOCAL_TRACK_STOPPED,
+                    TrackEvents.TRACK_STOPPED,
                     () => {
                         // if stream was stopped during screensharing session
                         // then we should switch to video
                         // otherwise we stopped it because we already switched
                         // to video, so nothing to do here
                         if (this.isSharingScreen) {
-                            this.toggleScreenSharing(false);
+                            this.toggleScreenSharing();
                         }
                     }
                 );
-                return this.useVideoStream(stream);
-            }).then(() => {
+                return room.addTrack(stream);
+            }).then((stream) => {
+                if (localVideo) {
+                    localVideo.stop();
+                }
+                localVideo = stream;
+
+                this.videoMuted = stream.isMuted();
+                APP.UI.setVideoMuted(this.localId, this.videoMuted);
+
+                APP.UI.addLocalStream(stream);
+
                 this.videoSwitchInProgress = false;
+                this.isSharingScreen = true;
+                APP.UI.updateDesktopSharingButtons();
                 console.log('sharing local desktop');
             }).catch((err) => {
                 this.videoSwitchInProgress = false;
-                this.toggleScreenSharing(false);
-
-                if(err === TrackErrors.CHROME_EXTENSION_USER_CANCELED)
-                    return;
-
                 console.error('failed to share local desktop', err);
-
-                if (err === TrackErrors.FIREFOX_EXTENSION_NEEDED) {
-                    APP.UI.showExtensionRequiredDialog(
-                        config.desktopSharingFirefoxExtensionURL
-                    );
-                    return;
-                }
-
-                // Handling:
-                // TrackErrors.CHROME_EXTENSION_INSTALLATION_ERROR
-                // TrackErrors.GENERAL
-                // and any other
-                let dialogTxt = APP.translation
-                    .generateTranslationHTML("dialog.failtoinstall");
-                let dialogTitle = APP.translation
-                    .generateTranslationHTML("dialog.error");
-                APP.UI.messageHandler.openDialog(
-                    dialogTitle,
-                    dialogTxt,
-                    false
-                );
-            });
-        } else {
-            createLocalTracks('video').then(
-                ([stream]) => this.useVideoStream(stream)
-            ).then(() => {
-                this.videoSwitchInProgress = false;
-                console.log('sharing local video');
-            }).catch((err) => {
-                this.useVideoStream(null);
-                this.videoSwitchInProgress = false;
-                console.error('failed to share local video', err);
             });
         }
     },
