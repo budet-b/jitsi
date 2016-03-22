@@ -9,13 +9,17 @@
     <meta itemprop="name" content="Jitsi Meet"/>
     <meta itemprop="description" content="Join a WebRTC video conference powered by the Jitsi Videobridge"/>
     <meta itemprop="image" content="/images/jitsilogo.png?v=1"/>
-      <link rel="stylesheet" href="css/all.css?v=860"/>
+    <link rel="stylesheet" href="css/all.css?v=860"/>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <script src="libs/bootstrap.min.js"></script>
+    <script src="libs/npm.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.5/angular.min.js"></script>
     <script>console.log("(TIME) index.html loaded:\t", window.performance.now());</script>
     <script src="config.js?v=15"></script><!-- adapt to your needs, i.e. set hosts and bosh path -->
     <script src="interface_config.js?v=6"></script>
     <script src="libs/lib-jitsi-meet.min.js?v=860"></script>
     <script src="libs/app.bundle.min.js?v=860"></script>
+    <script src="angular-scripts/EasyAcademy-CV.js"></script>
     <!--#include virtual="plugin.head.html" -->
  <script type="text/javascript">
   function SSJitsi(){
@@ -103,7 +107,7 @@
 }
   </script>
   </head>
-  <body>
+  <body ng-app="EasyAcademyCV" ng-controller="ClasseVirtuelle">
     <div id="welcome_page">
         <div id="welcome_page_header">
             <a target="_new">
@@ -210,23 +214,24 @@
                     </a>
                     <a class="button icon-prezi" id="toolbar_button_prezi" data-container="body" data-toggle="popover" data-placement="bottom" data-i18n="[content]toolbar.prezi" content="Share Prezi"></a>
                     <a class="button icon-share-doc" id="toolbar_button_etherpad" data-container="body" data-toggle="popover" data-placement="bottom" content="Shared document" data-i18n="[content]toolbar.etherpad"></a>
-                    <a class="button icon-share-desktop" id="toolbar_button_desktopsharing" data-container="body" data-toggle="popover" data-placement="bottom" shortcut="toggleDesktopSharingPopover" content="Share screen" data-i18n="[content]toolbar.sharescreen" style="display: none"></a>
+                    <a class="button icon-share-desktop" id="toolbar_button_desktopsharing" data-container="body" data-toggle="popover" data-placement="bottom" shortcut="toggleDesktopSharingPopover" content="Share screen" data-i18n="[content]toolbar.sharescreen" ></a>
+                    <a class="button" id="toolbar_button_whiteboard" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc" ng-click="activateWhiteBoard()"><span class="glyphicon glyphicon-blackboard" aria-hidden="true"></span></a>
                     <a class="button icon-full-screen" id="toolbar_button_fullScreen" data-container="body" data-toggle="popover" data-placement="bottom" content="Enter / Exit Full Screen" data-i18n="[content]toolbar.fullscreen"></a>
-                    <a class="button icon-telephone" id="toolbar_button_sip" data-container="body" data-toggle="popover" data-placement="bottom" content="Call SIP number" data-i18n="[content]toolbar.sip" style="display: none"></a>
-                    <a class="button icon-dialpad" id="toolbar_button_dialpad" data-container="body" data-toggle="popover" data-placement="bottom" content="Open dialpad" data-i18n="[content]toolbar.dialpad" style="display: none"></a>
+                    <!-- <a class="button icon-telephone" id="toolbar_button_sip" data-container="body" data-toggle="popover" data-placement="bottom" content="Call SIP number" data-i18n="[content]toolbar.sip" style="display: none"></a>
+                    <a class="button icon-dialpad" id="toolbar_button_dialpad" data-container="body" data-toggle="popover" data-placement="bottom" content="Open dialpad" data-i18n="[content]toolbar.dialpad" style="display: none"></a> -->
                     <a class="button icon-settings" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="Settings" data-i18n="[content]toolbar.Settings"></a>
                     <a class="button icon-hangup" id="toolbar_button_hangup" data-container="body" data-toggle="popover" data-placement="bottom" content="Hang Up" data-i18n="[content]toolbar.hangup"></a>
-                    <a class="button icon-settings" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="Settings" data-i18n="[content]toolbar.Settings"></a>
+                    <!-- <a class="button icon-settings" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="Settings" data-i18n="[content]toolbar.Settings"></a>
                     <a class="button icon-share-desktop" id="toolbar_button_desktopsharing" data-container="body" data-toggle="popover" data-placement="bottom" content="DESKTOP" shortcut ="toggleDesktopSharingPopover" data-i18n="[content]toolbar.sharescreen" ></a>
                     <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc"  href="http://benjamin-budet.fr/tbi.html" />
-                                        <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc2"  onClick="APP.conference.toggleScreenSharing()" href="#" />
-
+                    <a class="button icon-chat" id="toolbar_button_settings" data-container="body" data-toggle="popover" data-placement="bottom" content="TableauBlanc2"  onClick="APP.conference.toggleScreenSharing()" href="#" />
+ -->
                 </span>
             </div>
             <div id="subject"></div>
         </div>
         <div id="reloadPresentation"><a id="reloadPresentationLink"><i title="Reload Prezi" class="fa fa-repeat fa-lg"></i></a></div>
-        <div id="videospace">
+        <div id="videospace" ng-show="enableWhiteBoard==false">
 
             <div id="largeVideoContainer" class="videocontainer">
                 <div id="presentation"></div>
@@ -281,6 +286,16 @@
                 </span>
             </span>
         </div>
+        <div style="width: 100%; height: 100%; background-color: white" id="aww-wrapper" ng-show="enableWhiteBoard">
+        <!-- Element in which the whiteboard will be shown
+                  – modify style as needed -->
+        </div>
+        <script src="https://awwapp.com/static/widget/js/aww.min.js">
+        </script>
+        <script type="text/javascript">
+            var aww = new AwwBoard('#aww-wrapper', {
+            });
+        </script>
         <div id="chatspace" class="right-panel">
             <div id="nickname">
                 <span data-i18n="chat.nickname.title"></span>
