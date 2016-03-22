@@ -7,6 +7,7 @@ app.controller("ClasseVirtuelle", function ($scope) {
 		if ($scope.enableWhiteBoard) {
 			$scope.enableWhiteBoard = false;
 			$("#toolbar_button_whiteboard").removeClass('active');
+			APP.conference.toggleScreenSharing();
 		}
 		else if (!$scope.enableWhiteBoard) {
 			$scope.enableWhiteBoard = true;
